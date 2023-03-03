@@ -6,6 +6,9 @@ permissions:
   contents: read
 
 env:
+  AZURE_SUBSCRIPTION: 799c12ba-353c-44a1-883d-84808ebb2216 # customize this
+  SPRING_CLOUD_SERVICE: yi-asa-petclinic # customize this
+  KEYVAULT: your-keyvault-name # customize this
   # ==== APPS ====:
   API_GATEWAY: api-gateway
   ADMIN_SERVER: admin-server
