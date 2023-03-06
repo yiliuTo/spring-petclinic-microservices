@@ -6,6 +6,9 @@ permissions:
   contents: read
 
 env:
+  AZURE_SUBSCRIPTION: 799c12ba-353c-44a1-883d-84808ebb2216 # customize this
+  SPRING_CLOUD_SERVICE: yi-asa-petclinic # customize this
+  KEYVAULT: yi-keyvault # customize this
   # ==== APPS ====:
   API_GATEWAY: api-gateway
   ADMIN_SERVER: admin-server
@@ -55,8 +58,7 @@ jobs:
         package: ${{ github.workspace }}/${{ env.API_GATEWAY_JAR }}
         jvm-options: -Xms2048m -Xmx2048m
         runtime-version: Java_17
-        environment-variables: -SPRING_PROFILES_ACTIVE passwordless
-    
+
     - name: Deploy admin-server
       uses:  azure/spring-apps-deploy@v1      
       with:
@@ -68,7 +70,6 @@ jobs:
         package: ${{ github.workspace }}/${{ env.ADMIN_SERVER_JAR }}
         jvm-options: -Xms2048m -Xmx2048m
         runtime-version: Java_17
-        environment-variables: "-SPRING_PROFILES_ACTIVE passwordless"
 
     - name: Deploy customers-service
       uses: azure/spring-apps-deploy@v1      
@@ -81,7 +82,6 @@ jobs:
         package: ${{ github.workspace }}/${{ env.CUSTOMERS_SERVICE_JAR }}
         jvm-options: -Xms2048m -Xmx2048m
         runtime-version: Java_17
-        environment-variables: -SPRING_PROFILES_ACTIVE passwordless
 
     - name: Deploy vets-service
       uses: azure/spring-apps-deploy@v1      
@@ -94,7 +94,6 @@ jobs:
         package: ${{ github.workspace }}/${{ env.VETS_SERVICE_JAR }}
         jvm-options: -Xms2048m -Xmx2048m
         runtime-version: Java_17
-        environment-variables: -SPRING_PROFILES_ACTIVE passwordless
 
     - name: Deploy visits-service
       uses: azure/spring-apps-deploy@v1
@@ -107,4 +106,3 @@ jobs:
         package: ${{ github.workspace }}/${{ env.VISITS_SERVICE_JAR }}
         jvm-options: -Xms2048m -Xmx2048m
         runtime-version: Java_17
-        environment-variables: -SPRING_PROFILES_ACTIVE passwordless
