@@ -96,7 +96,7 @@ Note - `spring` CLI extension `1.5.0` or later is a pre-requisite to enable the 
 
 ```bash
     cd spring-petclinic-microservices
-    mvn clean package -DskipTests -Denv=cloud
+    mvn clean package -DskipTests
 ```
 This will take a few minutes.
 
@@ -258,22 +258,27 @@ Create 5 apps.
 ```bash
     az spring app create --name ${API_GATEWAY} --instance-count 1 --assign-endpoint true \
         --memory 2Gi \
+        --runtime-version Java_17 \
         --jvm-options='-Xms2048m -Xmx2048m'
     
     az spring app create --name ${ADMIN_SERVER} --instance-count 1 --assign-endpoint true \
         --memory 2Gi \
+        --runtime-version Java_17 \
         --jvm-options='-Xms2048m -Xmx2048m'
     
     az spring app create --name ${CUSTOMERS_SERVICE} --instance-count 1 \
         --memory 2Gi \
+        --runtime-version Java_17 \
         --jvm-options='-Xms2048m -Xmx2048m'
     
     az spring app create --name ${VETS_SERVICE} --instance-count 1 \
         --memory 2Gi \
+        --runtime-version Java_17 \
         --jvm-options='-Xms2048m -Xmx2048m'
     
     az spring app create --name ${VISITS_SERVICE} --instance-count 1 \
         --memory 2Gi \
+        --runtime-version Java_17 \
         --jvm-options='-Xms2048m -Xmx2048m'
 ```
 
@@ -282,7 +287,7 @@ Create 5 apps.
 Create a MySQL database in Azure Database for MySQL.
 
 ```bash
-    // create mysql server and provide access from Azure resources
+    # create mysql server and provide access from Azure resources
     az mysql flexible-server create \
         --name ${MYSQL_SERVER_NAME} \
         --resource-group ${RESOURCE_GROUP} \
@@ -294,7 +299,7 @@ Create a MySQL database in Azure Database for MySQL.
         --sku-name Standard_B1ms \
         --storage-size 32
     
-    // allow access from your dev machine for testing
+    # allow access from your dev machine for testing
     MY_IP=$(curl http://whatismyip.akamai.com)
     az mysql flexible-server firewall-rule create \
             --resource-group ${RESOURCE_GROUP} \
@@ -303,21 +308,20 @@ Create a MySQL database in Azure Database for MySQL.
             --start-ip-address ${MY_IP} \
             --end-ip-address ${MY_IP}
     
-    // create database
+    # create database
     az mysql flexible-server db create \
             --resource-group ${RESOURCE_GROUP} \
             --server-name ${MYSQL_SERVER_NAME} \
             --database-name ${MYSQL_DATABASE_NAME}
     
-    // increase connection timeout
+    # increase connection timeout
     az mysql flexible-server parameter set \
         --resource-group ${RESOURCE_GROUP} \
         --server ${MYSQL_SERVER_NAME} \
         --name wait_timeout \
         --value 2147483
     
-    
-    
+    # set timezone   
     az mysql flexible-server parameter set \
         --resource-group ${RESOURCE_GROUP} \
         --server ${MYSQL_SERVER_NAME} \
@@ -332,7 +336,7 @@ Create a MySQL database in Azure Database for MySQL.
 
     IDENTITY_ID=$(az identity show --name ${MYSQL_IDENTITY} --resource-group ${RESOURCE_GROUP} --query id -o tsv)
 
-    // Customer service connection
+    # Customer service connection
     az spring connection create mysql-flexible \
         --resource-group ${RESOURCE_GROUP} \
         --service ${SPRING_CLOUD_SERVICE} \
@@ -344,7 +348,7 @@ Create a MySQL database in Azure Database for MySQL.
         --system-identity mysql-identity-id=$IDENTITY_ID \
         --client-type springboot
 
-    // Vets service connection
+    # Vets service connection
     az spring connection create mysql-flexible \
         --resource-group ${RESOURCE_GROUP} \
         --service ${SPRING_CLOUD_SERVICE} \
@@ -356,7 +360,7 @@ Create a MySQL database in Azure Database for MySQL.
         --system-identity mysql-identity-id=$IDENTITY_ID \
         --client-type springboot 
     
-    // Visits service connection
+    # Visits service connection
     az spring connection create mysql-flexible \
         --resource-group ${RESOURCE_GROUP} \
         --service ${SPRING_CLOUD_SERVICE} \
@@ -374,7 +378,7 @@ Create a MySQL database in Azure Database for MySQL.
 Deploy Spring Boot applications to Azure.
 
 ```bash
-    az spring app deploy \
+az spring app deploy \
         --resource-group ${RESOURCE_GROUP} \
         --service ${SPRING_CLOUD_SERVICE} \
         --name ${API_GATEWAY} \
@@ -389,7 +393,6 @@ az spring app deploy \
         --artifact-path ${ADMIN_SERVER_JAR} \
         --jvm-options='-Xms2048m -Xmx2048m' \
         --env SPRING_PROFILES_ACTIVE=passwordless 
-
 
 az spring app deploy \
         --resource-group ${RESOURCE_GROUP} \
@@ -493,7 +496,7 @@ Navigate to the `Application Map` blade:
 Navigate to the `Performance` blade:
 ![](./media/petclinic-microservices-performance.jpg)
 
-Navigate to the `Performance/Dependenices` blade - you can see the performance number for dependencies, 
+Navigate to the `Performance/Dependencies` blade - you can see the performance number for dependencies, 
 particularly SQL calls:
 ![](./media/petclinic-microservices-insights-on-dependencies.jpg)
 
@@ -535,13 +538,12 @@ Navigate to the `Live Metrics` blade - you can see live metrics on screen with l
 
 #### Start monitoring Petclinic logs and metrics in Azure Log Analytics
 
-Open the Log Analytics that you created - you can find the Log Analytics in the same 
-Resource Group where you created an Azure Spring Apps service instance.
+Open the Log Analytics that you created - you can find the Log Analytics in the same Resource Group where you created an Azure Spring Apps service instance.
 
-In the Log Analyics page, selects `Logs` blade and run any of the sample queries supplied below 
-for Azure Spring Apps.
+In the Log Analyics page, selects `Logs` blade and run any of the sample queries supplied below for Azure Spring Apps.
 
 Type and run the following Kusto query to see application logs:
+
 ```sql
     AppPlatformLogsforSpring 
     | where TimeGenerated > ago(24h) 
@@ -593,98 +595,89 @@ Service Registry managed by Azure Spring Apps:
 ```
 
 ## Unit-2 - Automate deployments using GitHub Actions
-### Prerequisites 
+
+### Prerequisites
+
 To get started with deploying this sample app from GitHub Actions, please:
 1. Complete the sections above with your MySQL, Azure Spring Apps instances and apps created.
 2. Fork this repository and turn on GitHub Actions in your fork
 
-### Prepare secrets in your Key Vault
-If you do not have a Key Vault yet, run the following commands to provision a Key Vault:
+### Prepare GitHub Federated Credentials
+
+You can follow the steps described [here](https://learn.microsoft.com/en-us/azure/developer/github/connect-from-azure) to create a GitHub Federated Credentials in Azure Active Directory.
+
+Create an Azure Active Directory application:
+
 ```bash
-    az keyvault create --name ${KEY_VAULT} -g ${RESOURCE_GROUP}
+AZURE_CLIENT_ID=$(az ad app create --display-name github-petclinic-actions --query appId --output tsv)
+GITHUB_OBJECTID=$(az ad app show --id $AZURE_CLIENT_ID --query id --output tsv)
+```
 ```
 
-Add the MySQL secrets to your Key Vault:
+Create a service principal for the application:
+
 ```bash
-    az keyvault secret set --vault-name ${KEY_VAULT} --name "MYSQL-SERVER-FULL-NAME" --value ${MYSQL_SERVER_FULL_NAME}
-    az keyvault secret set --vault-name ${KEY_VAULT} --name "MYSQL-DATABASE-NAME" --value ${MYSQL_DATABASE_NAME}
-    az keyvault secret set --vault-name ${KEY_VAULT} --name "MYSQL-SERVER-ADMIN-LOGIN-NAME" --value ${MYSQL_SERVER_ADMIN_LOGIN_NAME}
-    az keyvault secret set --vault-name ${KEY_VAULT} --name "MYSQL-SERVER-ADMIN-PASSWORD" --value ${MYSQL_SERVER_ADMIN_PASSWORD}
+ASSIGNEE_OBJECTID=$(az ad sp create --id $AZURE_CLIENT_ID --query id --output tsv)
 ```
 
-Create a service principle with enough scope/role to manage your Azure Spring Apps instance:
+Create a service principle with enough scope/role to manage your Azure Spring Apps instance. Following example assigns contributor role on the resource group hosting the infrastructure:
+
 ```bash
-    az ad sp create-for-rbac --role contributor --scopes /subscriptions/${SUBSCRIPTION} --sdk-auth
-```
-With results:
-```json
-    {
-        "clientId": "<GUID>",
-        "clientSecret": "<GUID>",
-        "subscriptionId": "<GUID>",
-        "tenantId": "<GUID>",
-        "activeDirectoryEndpointUrl": "https://login.microsoftonline.com",
-        "resourceManagerEndpointUrl": "https://management.azure.com/",
-        "sqlManagementEndpointUrl": "https://management.core.windows.net:8443/",
-        "galleryEndpointUrl": "https://gallery.azure.com/",
-        "managementEndpointUrl": "https://management.core.windows.net/"
-    }
-```
-Add them as secrets to your Key Vault:
-```bash
-    az keyvault secret set --vault-name ${KEY_VAULT} --name "AZURE-CREDENTIALS-FOR-SPRING" --value "<results above>"
+az role assignment create --role contributor --subscription ${SUBSCRIPTION} --assignee-object-id  $ASSIGNEE_OBJECTID --assignee-principal-type ServicePrincipal --scope /subscriptions/${SUBSCRIPTION}/resourceGroups/${RESOURCE_GROUP}
 ```
 
-### Grant access to Key Vault with Service Principal
-To generate a key to access the Key Vault, execute command below:
+Add federated credentials for GitHub in Azure AD.
+
 ```bash
-    az ad sp create-for-rbac --role contributor --scopes /subscriptions/${SUBSCRIPTION}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.KeyVault/vaults/${KEY_VAULT} --sdk-auth
+az rest --method POST --uri 'https://graph.microsoft.com/beta/applications/<GITHUB_OBJECTID>/federatedIdentityCredentials' --body '{"name":"<CREDENTIAL-NAME>","issuer":"https://token.actions.githubusercontent.com","subject":"repo:<OWNER>/spring-petclinic-microservices:ref:refs/heads/azure","description":"Testing","audiences":["api://AzureADTokenExchange"]}'
 ```
-Then, follow [the steps here](https://learn.microsoft.com/azure/spring-apps/github-actions-key-vault#add-access-policies-for-the-credential) to add access policy for the Service Principal.
 
-In the end, add this service principal as secret named "AZURE_CREDENTIALS" in your forked GitHub repo following [the steps here](https://learn.microsoft.com/azure/spring-apps/how-to-github-actions?pivots=programming-language-java#set-up-github-repository-and-authenticate-1).
+In the previous command, replace the following values:
+CREDENTIAL-NAME: The name of the credential. This is the name that will appear in AAD portal.
+ASSIGNEE_OBJECTID: The object ID of the service principal created in the previous step.
+OWNER: The owner of the GitHub repository hosting the code. So, if you forked the repository, the owner is your GitHub username.
 
-### Customize your workflow
-Finally, edit the workflow file `.github/workflows/action.yml` in your forked repo to fill in the subscription ID, Azure Spring Apps instance name, and Key Vault name that you just created:
-```yml
-env:
-  AZURE_SUBSCRIPTION: subscription-id # customize this
-  SPRING_CLOUD_SERVICE: azure-spring-cloud-name # customize this
-  KEYVAULT: your-keyvault-name # customize this
+```bash
+az rest --method POST --uri 'https://graph.microsoft.com/beta/applications/00000000-0000-0000-0000-000000000000/federatedIdentityCredentials' --body '{"name":"github-petclinic-actions","issuer":"https://token.actions.githubusercontent.com","subject":"repo:Azure-Samples/spring-petclinic-microservices:ref:refs/heads/azure","description":"Testing","audiences":["api://AzureADTokenExchange"]}'
 ```
-Once you push this change, you will see GitHub Actions triggered to build and deploy all the apps in the repo to your Azure Spring Apps instance.
+
+The results in the command line will look like this:
+
+```bash
+{
+  "@odata.context": "https://graph.microsoft.com/beta/$metadata#applications('000000000-0000-0000-0000-000000000000')/federatedIdentityCredentials/$entity",
+  "audiences": [
+    "api://AzureADTokenExchange"
+  ],
+  "description": "Testing",
+  "id": "000000000-0000-0000-0000-000000000000",
+  "issuer": "https://token.actions.githubusercontent.com",
+  "name": "github-petclinic-actions",
+  "subject": "repo:Azure-Samples/spring-petclinic-microservices:ref:refs/heads/azure"
+}
+```
+
+It will look like this in Azure AD portal:
+![Federated Credentials](./media/azuread-github-federated-credential.png)
+
+> [!NOTE] It can take few minutes to refresh the federated credentials in Azure AD portal.
+
+### Prepare GitHub Secrets
+
+The actions expects the following secrets to be set in your GitHub repository:
+
+* AZURE_TENANT_ID: The tenant ID of the Azure subscription hosting the Azure Spring Apps instance.
+* AZURE_SUBSCRIPTION_ID: The subscription ID of the Azure subscription hosting the Azure Spring Apps instance.
+* AZURE_CLIENT_ID: The client ID of the service principal created in the previous step.
+* RESOURCE_GROUP: The resource group hosting the Azure Spring Apps instance.
+* SPRING_APPS_SERVICE_NAME: The name of the Azure Spring Apps instance.
+
+As you can see, there are not real confidential values, as even if someone gets access to them, they can't do anything with them. They can be replaced by environment variables.
+
+You will see GitHub Actions triggered to build and deploy all the apps in the repo to your Azure Spring Apps instance.
 ![](./media/automate-deployments-using-github-actions.png)
 
-## Unit-3 - Manage application secrets using Azure KeyVault
-
-Use Azure Key Vault to store and load secrets to connect to MySQL database.
-
-### Create Azure Key Vault and store secrets
-
-If you skipped the [Automation step](#automate-deployments-using-github-actions), create an Azure Key Vault and store database connection secrets.
-
-```bash
-    az keyvault create --name ${KEY_VAULT} -g ${RESOURCE_GROUP}
-    export KEY_VAULT_URI=$(az keyvault show --name ${KEY_VAULT} --query 'properties.vaultUri' --output tsv)
-```
-
-Store database connection secrets in Key Vault.
-
-```bash
-    az keyvault secret set --vault-name ${KEY_VAULT} \
-        --name "MYSQL-SERVER-FULL-NAME" --value ${MYSQL_SERVER_FULL_NAME}
-        
-    az keyvault secret set --vault-name ${KEY_VAULT} \
-        --name "MYSQL-DATABASE-NAME" --value ${MYSQL_DATABASE_NAME}
-        
-    az keyvault secret set --vault-name ${KEY_VAULT} \
-        --name "MYSQL-SERVER-ADMIN-LOGIN-NAME" --value ${MYSQL_SERVER_ADMIN_LOGIN_NAME}
-        
-    az keyvault secret set --vault-name ${KEY_VAULT} \
-        --name "MYSQL-SERVER-ADMIN-PASSWORD" --value ${MYSQL_SERVER_ADMIN_PASSWORD}
-```                      
-
-### Enable Managed Identities for applications in Azure Spring Apps
+## Unit-3 - Enable Managed Identities for applications in Azure Spring Apps
 
 Enable System Assigned Identities for applications and export identities to environment.
 
@@ -699,41 +692,22 @@ Enable System Assigned Identities for applications and export identities to envi
     export VISITS_SERVICE_IDENTITY=$(az spring app show --name ${VISITS_SERVICE} --query 'identity.principalId' --output tsv)
 ```
 
-### Grant Managed Identities with access to Azure Key Vault
+### Activate applications to use passwordless access to MySql
 
-Add an access policy to Azure Key Vault to allow Managed Identities to read secrets.
-
-```bash
-    az keyvault set-policy --name ${KEY_VAULT} \
-        --object-id ${CUSTOMERS_SERVICE_IDENTITY} --secret-permissions get list
-        
-    az keyvault set-policy --name ${KEY_VAULT} \
-        --object-id ${VETS_SERVICE_IDENTITY} --secret-permissions get list
-        
-    az keyvault set-policy --name ${KEY_VAULT} \
-        --object-id ${VISITS_SERVICE_IDENTITY} --secret-permissions get list
-```
-
-### Activate applications to load secrets from Azure Key Vault
-
-Activate applications to load secrets from Azure Key Vault.
+Configuration repo contains a profile for passwordless access to MySql. To activate it, we need to add the following environment variable `SPRING_PROFILES_ACTIVE=passwordless`
 
 ```bash
-    KEY_VAULT_URI=$(az keyvault show --name ${KEY_VAULT} --query 'properties.vaultUri' --output tsv)
-    # DO NOT FORGET to replace the value for "azure.keyvault.uri" JVM startup parameter with your Key Vault URI
     az spring app update --name ${CUSTOMERS_SERVICE} \
         --jvm-options='-Xms2048m -Xmx2048m' \
-        --env SPRING_PROFILES_ACTIVE=mysql,key-vault AZURE_KEYVAULT_URI=${KEY_VAULT_URI}
-    
-    # DO NOT FORGET to replace the value for "azure.keyvault.uri" JVM startup parameter with your Key Vault URI    
+        --env SPRING_PROFILES_ACTIVE=passwordless
+
     az spring app update --name ${VETS_SERVICE} \
         --jvm-options='-Xms2048m -Xmx2048m' \
-        --env SPRING_PROFILES_ACTIVE=mysql,key-vault AZURE_KEYVAULT_URI=${KEY_VAULT_URI}
-    
-    # DO NOT FORGET to replace the value for "azure.keyvault.uri" JVM startup parameter with your Key Vault URI       
+        --env SPRING_PROFILES_ACTIVE=passwordless
+        
     az spring app update --name ${VISITS_SERVICE} \
         --jvm-options='-Xms2048m -Xmx2048m' \
-        --env SPRING_PROFILES_ACTIVE=mysql,key-vault AZURE_KEYVAULT_URI=${KEY_VAULT_URI}
+        --env SPRING_PROFILES_ACTIVE=passwordless
 ```
 
 ## Next Steps

@@ -182,24 +182,5 @@
                 </property>
             </activation>
         </profile>
-
-        <profile>
-            <id>cloud</id>
-            <activation>
-                <property>
-                    <name>env</name>
-                    <value>cloud</value>
-                </property>
-            </activation>
-            <dependencies>
-                <!-- Azure Key Vault -->
-                <dependency>
-                    <groupId>com.microsoft.azure</groupId>
-                    <artifactId>azure-keyvault-secrets-spring-boot-starter</artifactId>
-                    <version>2.3.0</version>
-                </dependency>
-            </dependencies>
-        </profile>
-
     </profiles>
 </project>
