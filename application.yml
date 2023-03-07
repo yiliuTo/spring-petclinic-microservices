@@ -3,8 +3,9 @@ spring:
     config:
       server:
         git:
-          uri: https://github.com/azure-samples/spring-petclinic-microservices-config
+          uri: https://github.com/felipmiguel/spring-petclinic-microservices-config
         native:
           search-locations: classpath:.
+        default-label: fix-passwordless
   profiles:
     active: native
