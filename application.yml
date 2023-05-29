@@ -3,7 +3,8 @@ spring:
     config:
       server:
         git:
-          uri: https://github.com/azure-samples/spring-petclinic-microservices-config
+          uri: https://github.com/moarychan/spring-petclinic-microservices-config
+          default-label: fix-outdated-properties
         native:
           search-locations: classpath:.
   profiles:
