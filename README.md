@@ -24,7 +24,7 @@ This sample is an AZD template for a Spring Boot Petclinic application split int
 The following prerequisites are required to use this application. Please ensure that you have them all installed locally.
 
 - [Azure Developer CLI](https://aka.ms/azd-install)
-- [Java 17 or later](https://learn.microsoft.com/en-us/java/openjdk/install) - for API backend
+- [Java 17 or later](https://learn.microsoft.com/java/openjdk/install) - for API backend
 
 ### Quickstart
 
