@@ -4,7 +4,7 @@ name: spring-petclinic-microservices
 metadata:
   template: spring-petclinic-microservices@0.0.1-beta
 hooks:
-  prerestore:
+  preprovision:
     posix:
       shell: sh
       run: ./mvnw clean install -N
@@ -12,33 +12,38 @@ hooks:
       shell: pwsh
       run: ./mvnw.cmd clean install -N
 services:
-  spring-petclinic-api-gateway:
+  api-gateway:
     project: ./spring-petclinic-api-gateway
     host: springapp
     language: java
+    resourceName: ${ASA_INSTANCE_NAME}
     spring:
       deploymentName: default
-  spring-petclinic-admin-server:
+  admin-server:
     project: ./spring-petclinic-admin-server
     host: springapp
     language: java
+    resourceName: ${ASA_INSTANCE_NAME}
     spring:
       deploymentName: default
-  spring-petclinic-customers-service:
+  customers-service:
     project: ./spring-petclinic-customers-service
     host: springapp
     language: java
+    resourceName: ${ASA_INSTANCE_NAME}
     spring:
       deploymentName: default
-  spring-petclinic-vets-service:
+  vets-service:
     project: ./spring-petclinic-vets-service
     host: springapp
     language: java
+    resourceName: ${ASA_INSTANCE_NAME}
     spring:
       deploymentName: default
-  spring-petclinic-visits-service:
+  visits-service:
     project: ./spring-petclinic-visits-service
     host: springapp
     language: java
+    resourceName: ${ASA_INSTANCE_NAME}
     spring:
       deploymentName: default

@@ -9,10 +9,6 @@ param environmentName string
 @description('Primary location for all resources')
 param location string
 
-@description('Id of the user or app to assign application roles')
-param principalId string = ''
-
-
 @description('Relative Path of ASA API gateway app Jar')
 param gatewayRelativePath string
 
@@ -28,34 +24,18 @@ param vetsRelativePath string
 @description('Relative Path of ASA visits service app Jar')
 param visitsRelativePath string
 
-@secure()
-@description('MYSQL Server administrator password')
-param mysqlAdminPassword string
-
 var abbrs = loadJsonContent('./abbreviations.json')
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
 var asaInstanceName = '${abbrs.springApps}${resourceToken}'
-var gatewayAppName = 'spring-petclinic-api-gateway'
-var adminAppName = 'spring-petclinic-admin-server'
-var customersAppName = 'spring-petclinic-customers-service'
-var vetsAppName = 'spring-petclinic-vets-service'
-var visitsAppName = 'spring-petclinic-visits-service'
-var keyVaultName = '${abbrs.keyVaultVaults}${resourceToken}'
-var mysqlServerName = '${abbrs.sqlServers}${resourceToken}'
-var databaseName = 'petclinic'
-var mysqlDatabaseSecretName = 'MYSQL_DATABASE_NAME'
-var mysqlServerSecretName = 'MYSQL_SERVER_FULL_NAME'
-var mysqlUserSecretName = 'MYSQL_SERVER_ADMIN_LOGIN_NAME'
-var mysqlPasswordSecretName = 'MYSQL_SERVER_ADMIN_PASSWORD'
-var mysqlAdminName = 'mysqladmin'
+var gatewayAppName = 'api-gateway'
+var adminAppName = 'admin-server'
+var customersAppName = 'customers-service'
+var vetsAppName = 'vets-service'
+var visitsAppName = 'visits-service'
 var tags = {
   'azd-env-name': environmentName
   'spring-cloud-azure': 'true'
 }
-var asaTag = {
-  'azd-service-name': [ gatewayAppName, adminAppName, customersAppName, vetsAppName, visitsAppName ]
-}
-
 
 // Organize resources in a resource group
 resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
@@ -74,7 +54,7 @@ module springApps 'modules/springapps/springapps.bicep' = {
 	customersAppName: customersAppName
 	vetsAppName: vetsAppName
 	visitsAppName: visitsAppName
-	tags: union(tags, asaTag)
+	tags: tags
 	asaInstanceName: asaInstanceName
 	gatewayRelativePath: gatewayRelativePath
 	adminRelativePath: adminRelativePath
@@ -83,3 +63,5 @@ module springApps 'modules/springapps/springapps.bicep' = {
 	visitsRelativePath: visitsRelativePath
   }
 }
+
+output ASA_INSTANCE_NAME string = '${asaInstanceName}'

@@ -17,9 +17,22 @@ resource asaInstance 'Microsoft.AppPlatform/Spring@2022-12-01' = {
   location: location
   tags: tags
   sku: {
-      name: 'B0'
-      tier: 'Basic'
+      name: 'S0'
+      tier: 'Standard'
+  }
+}
+
+resource asaConfigServer 'Microsoft.AppPlatform/Spring/configServers@2022-12-01' = {
+  name: 'default'
+  parent: asaInstance
+  properties: {
+    configServer: {
+      gitProperty: {
+        label: 'master'
+        uri: 'https://github.com/azure-samples/spring-petclinic-microservices-config'
+      }
     }
+  }
 }
 
 resource gatewayApp 'Microsoft.AppPlatform/Spring/apps@2022-12-01' = {
@@ -47,7 +60,7 @@ resource customersApp 'Microsoft.AppPlatform/Spring/apps@2022-12-01' = {
   location: location
   parent: asaInstance
   properties: {
-    public: true
+    public: false
     activeDeploymentName: 'default'
   }
 }
@@ -57,7 +70,7 @@ resource vetsApp 'Microsoft.AppPlatform/Spring/apps@2022-12-01' = {
   location: location
   parent: asaInstance
   properties: {
-    public: true
+    public: false
     activeDeploymentName: 'default'
   }
 }
@@ -67,7 +80,7 @@ resource visitsApp 'Microsoft.AppPlatform/Spring/apps@2022-12-01' = {
   location: location
   parent: asaInstance
   properties: {
-    public: true
+    public: false
     activeDeploymentName: 'default'
   }
 }
@@ -81,8 +94,6 @@ resource gatewayDeployment 'Microsoft.AppPlatform/Spring/apps/deployments@2022-1
         cpu: '1'
         memory: '2Gi'
       }
-      environmentVariables: {
-	  }
     }
     source: {
       type: 'Jar'
@@ -102,8 +113,6 @@ resource adminDeployment 'Microsoft.AppPlatform/Spring/apps/deployments@2022-12-
         cpu: '1'
         memory: '2Gi'
       }
-      environmentVariables: {
-	  }
     }
     source: {
       type: 'Jar'
@@ -123,8 +132,6 @@ resource customersDeployment 'Microsoft.AppPlatform/Spring/apps/deployments@2022
         cpu: '1'
         memory: '2Gi'
       }
-      environmentVariables: {
-	  }
     }
     source: {
       type: 'Jar'
@@ -144,8 +151,6 @@ resource vetsDeployment 'Microsoft.AppPlatform/Spring/apps/deployments@2022-12-0
         cpu: '1'
         memory: '2Gi'
       }
-      environmentVariables: {
-	  }
     }
     source: {
       type: 'Jar'
@@ -165,8 +170,6 @@ resource visitsDeployment 'Microsoft.AppPlatform/Spring/apps/deployments@2022-12
         cpu: '1'
         memory: '2Gi'
       }
-      environmentVariables: {
-	  }
     }
     source: {
       type: 'Jar'
@@ -176,11 +179,3 @@ resource visitsDeployment 'Microsoft.AppPlatform/Spring/apps/deployments@2022-12
     }
   }
 }
-
-output customersIdentityPrincipalId string = customersApp.identity.principalId
-output vetsIdentityPrincipalId string = vetsApp.identity.principalId
-output visitsIdentityPrincipalId string = visitsApp.identity.principalId
-output gatewayUri string = 'https://${gatewayApp.properties.url}'
-output customersUri string = 'https://${customersApp.properties.url}'
-output vetsUri string = 'https://${vetsApp.properties.url}'
-output visitsUri string = 'https://${visitsApp.properties.url}'

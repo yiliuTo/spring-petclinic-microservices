@@ -7,17 +7,19 @@ languages:
 products:
 - azure
 - Azure Spring Apps
-- azure-mysql
-- azure-key-vault
 - ms-build-openjdk
-name: "Deploy Spring Boot apps using Azure Spring Apps and MySQL"
-description: "Deploy Spring Boot apps using Azure Spring Apps and MySQL"
+name: "Deploy Spring Boot apps using Azure Spring Apps"
+description: "Deploy Spring Boot apps using Azure Spring Apps"
 urlFragment: "spring-petclinic-microservices"
 ---
 
 # Deploy Spring Boot apps using Azure Spring Apps and MySQL
 
 This sample is an AZD template for a Spring Boot Pet Clinic application split into microservices running on Azure Spring Apps.
+
+Let's jump in and get this up and running in Azure. When you are finished, you will have a fully functional Spring Petclinic application deployed to the cloud. In later steps, you'll see how to setup a pipeline and run the application.
+
+![Spring Petclinic Application](media/petclinic.jpg)
 
 ## Run with AZD
 
@@ -27,6 +29,7 @@ The following prerequisites are required to use this application. Please ensure 
 
 - [Azure Developer CLI](https://aka.ms/azd-install)
 - [Java 17 or later](https://learn.microsoft.com/java/openjdk/install) - for API backend
+- [Powershell 7](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows?view=powershell-7.3) if you use windows
 
 ### Quickstart
 
@@ -38,7 +41,7 @@ This quickstart will show you how to authenticate on Azure, initialize using a t
 # Log in to azd. Only required once per-install.
 azd auth login
 
-# Enable Azure Spring Apps feature for AZD
+# Enable Azure Spring Apps feature for AZD. Only required once per-install.
 azd config set alpha.springapp on
 
 # First-time project setup. Initialize a project in the current directory, using this template. 
@@ -53,12 +56,10 @@ azd up
 This application utilizes the following Azure resources:
 
 - [**Azure Spring Apps**](https://docs.microsoft.com/azure/spring-apps/) to host the application
-  - [**Azure Mysql - Flexible Server**](https://docs.microsoft.com/azure/mysql/flexible-server/) for storage
-- [**Azure Key Vault**](https://docs.microsoft.com/azure/key-vault/) for securing secrets
 
-Here's a high level architecture diagram that illustrates these components. Notice that these are all contained within a single [resource group](https://docs.microsoft.com/azure/azure-resource-manager/management/manage-resource-groups-portal), that will be created for you when you create the resources.
+The Architecture diagram of the Spring Petclinic Microservices is shown as below:
 
-!["Application architecture diagram"](media/resources.png)
+![Spring Petclinic Microservices architecture](docs/microservices-architecture-diagram.jpg)
 
 > This template provisions resources to an Azure subscription that you will select upon provisioning them. Please refer to the [Pricing calculator for Microsoft Azure](https://azure.microsoft.com/pricing/calculator/) and, if needed, update the included Azure resource definitions found in `infra/main.bicep` to suit your needs.
 
@@ -66,27 +67,13 @@ Here's a high level architecture diagram that illustrates these components. Noti
 
 This template is structured to follow the [Azure Developer CLI](https://aka.ms/azure-dev/overview). You can learn more about `azd` architecture in [the official documentation](https://learn.microsoft.com/azure/developer/azure-developer-cli/make-azd-compatible?pivots=azd-create#understand-the-azd-architecture).
 
-### Next Steps
+### Additional `azd` commands
 
 At this point, you have a complete application deployed on Azure. But there is much more that the Azure Developer CLI can do. These next steps will introduce you to additional commands that will make creating applications on Azure much easier. Using the Azure Developer CLI, you can delete the resources easily.
 
 - [`azd down`](https://learn.microsoft.com/azure/developer/azure-developer-cli/reference#azd-down) - to delete all the Azure resources created with this template
 
-
-### Additional `azd` commands
-
 The Azure Developer CLI includes many other commands to help with your Azure development experience. You can view these commands at the terminal by running `azd help`. You can also view the full list of commands on our [Azure Developer CLI command](https://aka.ms/azure-dev/ref) page.
-
-### More about ASA
-In this quickstart, you've deployed an existing Spring Boot-based app using AZD. To learn more about Azure Spring Apps, go to:
-
-- [Azure Spring Apps](https://azure.microsoft.com/products/spring-apps/)
-- [Azure Spring Apps docs](https://learn.microsoft.com/azure/developer/java/)
-- [Deploy Spring microservices from scratch](https://github.com/microsoft/azure-spring-cloud-training)
-- [Deploy existing Spring microservices](https://github.com/Azure-Samples/azure-spring-cloud)
-- [Azure for Java Cloud Developers](https://learn.microsoft.com/azure/developer/java/)
-- [Spring Cloud Azure](https://spring.io/projects/spring-cloud-azure)
-- [Spring Cloud](https://spring.io/projects/spring-cloud)
 
 ### Security
 
@@ -94,34 +81,11 @@ In this quickstart, you've deployed an existing Spring Boot-based app using AZD.
 
 This template creates the [managed identity](https://docs.microsoft.com/azure/active-directory/managed-identities-azure-resources/overview) for your apps inside your Azure Active Directory tenant, and they are used to authenticate your apps with Azure and other services that support Azure AD authentication like Key Vault via access policies. You will see principalId referenced in the infrastructure as code files, that refers to the id of the currently logged in Azure Developer CLI user, which will be granted access policies and permissions to run the application locally. To view your managed identity in the Azure Portal, follow these [steps](https://docs.microsoft.com/azure/active-directory/managed-identities-azure-resources/how-to-view-managed-identity-service-principal-portal).
 
-#### Key Vault
-
-This template uses [Azure Key Vault](https://docs.microsoft.com/azure/key-vault/general/overview) to securely store your PostgreSQL - Flexible Server user password. Key Vault is a cloud service for securely storing and accessing secrets (API keys, passwords, certificates, cryptographic keys) and makes it simple to give other Azure services access to them. As you continue developing your solution, you may add as many secrets to your Key Vault as you require.
-
-### Reporting Issues and Feedback
+### Reporting AZD Issues and Feedback
 
 If you have any feature requests, issues, or areas for improvement, please [file an issue](https://aka.ms/azure-dev/issues). To keep up-to-date, ask questions, or share suggestions, join our [GitHub Discussions](https://aka.ms/azure-dev/discussions). You may also contact us via AzDevTeam@microsoft.com.
 
-### Credits
-
-This Spring microservices sample is forked from 
-[spring-petclinic/spring-petclinic-microservices](https://github.com/spring-petclinic/spring-petclinic-microservices) - see [Petclinic README](./README-petclinic.md). 
-
-### Contributing
-
-This project welcomes contributions and suggestions.  Most contributions require you to agree to a
-Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
-the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.
-
-When you submit a pull request, a CLA bot will automatically determine whether you need to provide
-a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions
-provided by the bot. You will only need to do this once across all repos using our CLA.
-
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
-For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
-contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
-
-## Run with Azrue CLI
+## Run with Azure CLI
 
 Azure Spring Apps enables you to easily run a Spring Boot applications on Azure.
 
@@ -137,7 +101,7 @@ This quickstart shows you how to deploy an existing Java Spring Cloud applicatio
   * [Unit 3 - Enable Managed Identities for applications in Azure Spring Apps](#unit-3---enable-managed-identities-for-applications-in-azure-spring-apps)
   * [Next Steps](#next-steps)
 
-## What will you experience
+### What will you experience
 You will:
 - Build existing Spring Boot applications
 - Provision an Azure Spring Apps service instance. If you prefer Terraform, you may also provision using Terraform, see [`README-terraform`](./terraform/README-terraform.md)
@@ -148,7 +112,7 @@ You will:
 - Automate deployments using GitHub Actions
 - Manage application secrets using Azure KeyVault
 
-## What you will need
+### What you will need
 
 In order to deploy a Java app to cloud, you need an Azure subscription. If you do not already have an Azure subscription, you can activate your [MSDN subscriber benefits](https://azure.microsoft.com/pricing/member-offers/msdn-benefits-details/) or sign up for a [free Azure account]((https://azure.microsoft.com/free/)).
 
@@ -164,7 +128,7 @@ In addition, you will need the following:
 semantics vary. Therefore, only bash can be used with the commands in this repo.
 To complete these repo steps on Windows, use Git Bash that accompanies the Windows distribution of
 
-### OR Use Azure Cloud Shell
+#### OR Use Azure Cloud Shell
 
 Or, you can use the Azure Cloud Shell. Azure hosts Azure Cloud Shell, an interactive shell
 environment that you can use through your browser. You can use the Bash with Cloud Shell
@@ -183,7 +147,7 @@ To run the code in this article in Azure Cloud Shell:
 
 1. Select Enter to run the code.
 
-## Install the Azure CLI extension
+### Install the Azure CLI extension
 
 Install the Azure Spring  extension for the Azure CLI using the following command
 
@@ -196,16 +160,16 @@ Note - `spring` CLI extension `1.5.0` or later is a pre-requisite to enable the 
     az extension update --name spring
 ```
 
-## Clone and build the repo
+### Clone and build the repo
 
-### Create a new folder and clone the sample app repository to your Azure Cloud account
+#### Create a new folder and clone the sample app repository to your Azure Cloud account
 
 ```bash
     mkdir source-code
     git clone https://github.com/azure-samples/spring-petclinic-microservices
 ```
 
-### Change directory and build the project
+#### Change directory and build the project
 
 ```bash
     cd spring-petclinic-microservices
@@ -213,9 +177,9 @@ Note - `spring` CLI extension `1.5.0` or later is a pre-requisite to enable the 
 ```
 This will take a few minutes.
 
-## Unit-1 - Deploy and monitor Spring Boot apps
+### Unit-1 - Deploy and monitor Spring Boot apps
 
-### Prepare your environment for deployments
+#### Prepare your environment for deployments
 
 Create a bash script with environment variables by making a copy of the supplied template:
 
@@ -245,7 +209,7 @@ Then, set the environment:
     source .scripts/setup-env-variables-azure.sh
 ```
 
-### Login to Azure
+#### Login to Azure
 
 Login to the Azure CLI and choose your active subscription. Be sure to choose the active subscription that is whitelisted for Azure Spring Apps
 
@@ -255,7 +219,7 @@ Login to the Azure CLI and choose your active subscription. Be sure to choose th
     az account set --subscription ${SUBSCRIPTION}
 ```
 
-### Create Azure Spring App service instance
+#### Create Azure Spring App service instance
 
 Prepare a name for your Azure Spring App service.  The name must be between 4 and 32 characters long and can contain only lowercase letters, numbers, and hyphens.  The first character of the service name must be a letter and the last character must be either a letter or a number.
 
@@ -287,7 +251,7 @@ Set your default resource group name and cluster name using the following comman
         spring=${SPRING_CLOUD_SERVICE}
 ```
 
-### Create and configure Log Analytics Workspace
+#### Create and configure Log Analytics Workspace
 
 Create a Log Analytics Workspace using Azure CLI:
 
@@ -354,7 +318,7 @@ Setup diagnostics and publish logs and metrics from Spring Boot apps to Azure Lo
            ]'
 ```
 
-### Load Spring Apps Config Server
+#### Load Spring Apps Config Server
 
 Use the `config-file.yml` in the root of this project to load configuration into the Config Server in Azure Spring Apps.
 
@@ -364,7 +328,7 @@ Use the `config-file.yml` in the root of this project to load configuration into
         --name ${SPRING_CLOUD_SERVICE}
 ```
 
-### Create applications in Azure Spring Apps
+#### Create applications in Azure Spring Apps
 
 Create 5 apps.
 
@@ -395,7 +359,7 @@ Create 5 apps.
         --jvm-options='-Xms2048m -Xmx2048m'
 ```
 
-### Create MySQL Database
+#### Create MySQL Database
 
 Create a MySQL database in Azure Database for MySQL.
 
@@ -489,7 +453,7 @@ Create a MySQL database in Azure Database for MySQL.
         --yes
 ```
 
-### Deploy Spring Boot applications and set environment variables
+#### Deploy Spring Boot applications and set environment variables
 
 Deploy Spring Boot applications to Azure.
 
@@ -543,9 +507,9 @@ Navigate to the URL provided by the previous command to open the Pet Clinic appl
 
 ![](./media/petclinic.jpg)
 
-### Monitor Spring Boot applications
+#### Monitor Spring Boot applications
 
-#### Use the Petclinic application and make a few REST API calls
+##### Use the Petclinic application and make a few REST API calls
 
 Open the Petclinic application and try out a few tasks - view pet owners and their pets,
 vets, and schedule pet visits:
@@ -570,7 +534,7 @@ curl -X GET https://${SPRING_CLOUD_SERVICE}-${API_GATEWAY}.azuremicroservices.io
 curl -X GET https://${SPRING_CLOUD_SERVICE}-${API_GATEWAY}.azuremicroservices.io/api/visit/owners/6/pets/8/visits
 ```
 
-#### Get the log stream for API Gateway and Customers Service
+##### Get the log stream for API Gateway and Customers Service
 
 Use the following command to get the latest 100 lines of app console logs from Customers Service.
 
@@ -583,7 +547,7 @@ az spring app logs -n ${API_GATEWAY} -f
 ```
 You can use `az spring app logs -h` to explore more parameters and log stream functionalities.
 
-#### Open Actuator endpoints for API Gateway and Customers Service apps
+##### Open Actuator endpoints for API Gateway and Customers Service apps
 
 Spring Boot includes a number of additional features to help you monitor and manage your application when you push it to production ([Spring Boot Actuator: Production-ready Features](https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#actuator)). You can choose to manage and monitor your application by using HTTP endpoints or with JMX. Auditing, health, and metrics gathering can also be automatically applied to your application.
 
@@ -601,7 +565,7 @@ open https://${SPRING_CLOUD_SERVICE}-${API_GATEWAY}.azuremicroservices.io/api/cu
 open https://${SPRING_CLOUD_SERVICE}-${API_GATEWAY}.azuremicroservices.io/api/customer/actuator/configprops
 ```
 
-#### Start monitoring Spring Boot apps and dependencies - in Application Insights
+##### Start monitoring Spring Boot apps and dependencies - in Application Insights
 
 Open the Application Insights created by Azure Spring Apps and start monitoring Spring Boot applications. You can find the Application Insights in the same Resource Group where
 you created an Azure Spring Apps service instance.
@@ -652,7 +616,7 @@ the availability of applications:
 Navigate to the `Live Metrics` blade - you can see live metrics on screen with low latencies < 1 second:
 ![](./media/petclinic-microservices-live-metrics.jpg)
 
-#### Start monitoring Petclinic logs and metrics in Azure Log Analytics
+##### Start monitoring Petclinic logs and metrics in Azure Log Analytics
 
 Open the Log Analytics that you created - you can find the Log Analytics in the same Resource Group where you created an Azure Spring Apps service instance.
 
@@ -710,7 +674,7 @@ Service Registry managed by Azure Spring Apps:
     | sort by TimeGenerated
 ```
 
-## Unit-2 - Automate deployments using GitHub Actions
+### Unit-2 - Automate deployments using GitHub Actions
 ```bash
 AZURE_CLIENT_ID=$(az ad app create --display-name github-petclinic-actions --query appId --output tsv)
 GITHUB_OBJECTID=$(az ad app show --id $AZURE_CLIENT_ID --query id --output tsv)
@@ -727,7 +691,7 @@ As you can see, there are not real confidential values, as even if someone gets 
 You will see GitHub Actions triggered to build and deploy all the apps in the repo to your Azure Spring Apps instance.
 ![](./media/automate-deployments-using-github-actions.png)
 
-## Unit-3 - Enable Managed Identities for applications in Azure Spring Apps
+### Unit-3 - Enable Managed Identities for applications in Azure Spring Apps
 
 Enable System Assigned Identities for applications and export identities to environment.
 
@@ -742,7 +706,7 @@ Enable System Assigned Identities for applications and export identities to envi
     export VISITS_SERVICE_IDENTITY=$(az spring app show --name ${VISITS_SERVICE} --query 'identity.principalId' --output tsv)
 ```
 
-### Activate applications to use passwordless access to MySql
+#### Activate applications to use passwordless access to MySql
 
 Configuration repo contains a profile for passwordless access to MySql. To activate it, we need to add the following environment variable `SPRING_PROFILES_ACTIVE=passwordless`
 
@@ -759,3 +723,33 @@ Configuration repo contains a profile for passwordless access to MySql. To activ
         --jvm-options='-Xms2048m -Xmx2048m' \
         --env SPRING_PROFILES_ACTIVE=passwordless
 ```
+
+## More about ASA
+In this quickstart, you've deployed an existing Spring Boot-based app using AZD. To learn more about Azure Spring Apps, go to:
+
+- [Azure Spring Apps](https://azure.microsoft.com/products/spring-apps/)
+- [Azure Spring Apps docs](https://learn.microsoft.com/azure/developer/java/)
+- [Deploy Spring microservices from scratch](https://github.com/microsoft/azure-spring-cloud-training)
+- [Deploy existing Spring microservices](https://github.com/Azure-Samples/azure-spring-cloud)
+- [Azure for Java Cloud Developers](https://learn.microsoft.com/azure/developer/java/)
+- [Spring Cloud Azure](https://spring.io/projects/spring-cloud-azure)
+- [Spring Cloud](https://spring.io/projects/spring-cloud)
+
+## Credits
+
+This Spring microservices sample is forked from
+[spring-petclinic/spring-petclinic-microservices](https://github.com/spring-petclinic/spring-petclinic-microservices) - see [Petclinic README](./README-petclinic.md).
+
+## Contributing
+
+This project welcomes contributions and suggestions. Most contributions require you to agree to a
+Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
+the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.
+
+When you submit a pull request, a CLA bot will automatically determine whether you need to provide
+a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions
+provided by the bot. You will only need to do this once across all repos using our CLA.
+
+This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
+For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
+contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
