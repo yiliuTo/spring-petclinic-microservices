@@ -41,7 +41,6 @@ resource gatewayApp 'Microsoft.AppPlatform/Spring/apps@2022-12-01' = {
   parent: asaInstance
   properties: {
     public: true
-    activeDeploymentName: 'default'
   }
 }
 
@@ -51,7 +50,6 @@ resource adminApp 'Microsoft.AppPlatform/Spring/apps@2022-12-01' = {
   parent: asaInstance
   properties: {
     public: true
-    activeDeploymentName: 'default'
   }
 }
 
@@ -61,7 +59,6 @@ resource customersApp 'Microsoft.AppPlatform/Spring/apps@2022-12-01' = {
   parent: asaInstance
   properties: {
     public: false
-    activeDeploymentName: 'default'
   }
 }
 
@@ -71,7 +68,6 @@ resource vetsApp 'Microsoft.AppPlatform/Spring/apps@2022-12-01' = {
   parent: asaInstance
   properties: {
     public: false
-    activeDeploymentName: 'default'
   }
 }
 
@@ -81,7 +77,6 @@ resource visitsApp 'Microsoft.AppPlatform/Spring/apps@2022-12-01' = {
   parent: asaInstance
   properties: {
     public: false
-    activeDeploymentName: 'default'
   }
 }
 
