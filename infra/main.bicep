@@ -56,11 +56,6 @@ module springApps 'modules/springapps/springapps.bicep' = {
 	visitsAppName: visitsAppName
 	tags: tags
 	asaInstanceName: asaInstanceName
-	gatewayRelativePath: gatewayRelativePath
-	adminRelativePath: adminRelativePath
-	customersRelativePath: customersRelativePath
-	vetsRelativePath: vetsRelativePath
-	visitsRelativePath: visitsRelativePath
   }
 }
 

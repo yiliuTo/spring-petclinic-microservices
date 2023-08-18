@@ -6,33 +6,39 @@ param vetsAppName string
 param visitsAppName string
 param location string = resourceGroup().location
 param tags object = {}
-param gatewayRelativePath string
-param adminRelativePath string
-param customersRelativePath string
-param vetsRelativePath string
-param visitsRelativePath string
 
 resource asaInstance 'Microsoft.AppPlatform/Spring@2022-12-01' = {
   name: asaInstanceName
   location: location
   tags: tags
   sku: {
-      name: 'S0'
-      tier: 'Standard'
+      name: 'E0'
+      tier: 'Enterprise'
   }
 }
 
-resource asaConfigServer 'Microsoft.AppPlatform/Spring/configServers@2022-12-01' = {
+resource asaConfigServer 'Microsoft.AppPlatform/Spring/configurationServices@2022-12-01' = {
   name: 'default'
   parent: asaInstance
   properties: {
-    configServer: {
+    settings: {
       gitProperty: {
-        label: 'master'
-        uri: 'https://github.com/azure-samples/spring-petclinic-microservices-config'
+        repositories: [
+          {
+            label: 'master'
+            name: 'spring-petclinic-microservices-config'
+            uri: 'https://github.com/azure-samples/spring-petclinic-microservices-config'
+            patterns: [ 'admin-server', 'api-gateway', 'customers-service', 'vets-service', 'visits-service' ]
+          }
+        ]
       }
     }
   }
+}
+
+resource asaServiceRegistries 'Microsoft.AppPlatform/Spring/serviceRegistries@2022-12-01' = {
+  name: 'default'
+  parent: asaInstance
 }
 
 resource gatewayApp 'Microsoft.AppPlatform/Spring/apps@2022-12-01' = {
@@ -41,7 +47,19 @@ resource gatewayApp 'Microsoft.AppPlatform/Spring/apps@2022-12-01' = {
   parent: asaInstance
   properties: {
     public: true
+    addonConfigs: {
+	  applicationConfigurationService: {
+	    resourceId: '/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.AppPlatform/Spring/${asaInstanceName}/configurationServices/default'
+	  }
+	  serviceRegistry: {
+	    resourceId: '/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.AppPlatform/Spring/${asaInstanceName}/serviceRegistries/default'
+	  }
+	}
   }
+  dependsOn: [
+    asaConfigServer
+    asaServiceRegistries
+  ]
 }
 
 resource adminApp 'Microsoft.AppPlatform/Spring/apps@2022-12-01' = {
@@ -50,7 +68,19 @@ resource adminApp 'Microsoft.AppPlatform/Spring/apps@2022-12-01' = {
   parent: asaInstance
   properties: {
     public: true
+	addonConfigs: {
+	  applicationConfigurationService: {
+		resourceId: '/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.AppPlatform/Spring/${asaInstanceName}/configurationServices/default'
+	  }
+	  serviceRegistry: {
+		resourceId: '/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.AppPlatform/Spring/${asaInstanceName}/serviceRegistries/default'
+	  }
+	}
   }
+  dependsOn: [
+    asaConfigServer
+    asaServiceRegistries
+  ]
 }
 
 resource customersApp 'Microsoft.AppPlatform/Spring/apps@2022-12-01' = {
@@ -59,7 +89,19 @@ resource customersApp 'Microsoft.AppPlatform/Spring/apps@2022-12-01' = {
   parent: asaInstance
   properties: {
     public: false
+	addonConfigs: {
+	  applicationConfigurationService: {
+		resourceId: '/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.AppPlatform/Spring/${asaInstanceName}/configurationServices/default'
+	  }
+	  serviceRegistry: {
+		resourceId: '/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.AppPlatform/Spring/${asaInstanceName}/serviceRegistries/default'
+	  }
+	}
   }
+  dependsOn: [
+    asaConfigServer
+    asaServiceRegistries
+  ]
 }
 
 resource vetsApp 'Microsoft.AppPlatform/Spring/apps@2022-12-01' = {
@@ -68,7 +110,19 @@ resource vetsApp 'Microsoft.AppPlatform/Spring/apps@2022-12-01' = {
   parent: asaInstance
   properties: {
     public: false
+	addonConfigs: {
+	  applicationConfigurationService: {
+		resourceId: '/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.AppPlatform/Spring/${asaInstanceName}/configurationServices/default'
+	  }
+	  serviceRegistry: {
+		resourceId: '/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.AppPlatform/Spring/${asaInstanceName}/serviceRegistries/default'
+	  }
+	}
   }
+  dependsOn: [
+    asaConfigServer
+    asaServiceRegistries
+  ]
 }
 
 resource visitsApp 'Microsoft.AppPlatform/Spring/apps@2022-12-01' = {
@@ -77,7 +131,19 @@ resource visitsApp 'Microsoft.AppPlatform/Spring/apps@2022-12-01' = {
   parent: asaInstance
   properties: {
     public: false
+	addonConfigs: {
+	  applicationConfigurationService: {
+		resourceId: '/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.AppPlatform/Spring/${asaInstanceName}/configurationServices/default'
+	  }
+	  serviceRegistry: {
+		resourceId: '/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.AppPlatform/Spring/${asaInstanceName}/serviceRegistries/default'
+	  }
+	}
   }
+  dependsOn: [
+    asaConfigServer
+    asaServiceRegistries
+  ]
 }
 
 resource gatewayDeployment 'Microsoft.AppPlatform/Spring/apps/deployments@2022-12-01' = {
@@ -85,16 +151,19 @@ resource gatewayDeployment 'Microsoft.AppPlatform/Spring/apps/deployments@2022-1
   parent: gatewayApp
   properties: {
     deploymentSettings: {
+      addonConfigs: {
+		applicationConfigurationService: {
+			configFilePatterns: gatewayAppName
+		}
+	  }
       resourceRequests: {
         cpu: '1'
         memory: '2Gi'
       }
     }
     source: {
-      type: 'Jar'
-      jvmOptions: '-Xms2048m -Xmx2048m'
-      runtimeVersion: 'Java_17'
-      relativePath: gatewayRelativePath
+	  type: 'BuildResult'
+      buildResultId: '<default>'
     }
   }
 }
@@ -104,16 +173,19 @@ resource adminDeployment 'Microsoft.AppPlatform/Spring/apps/deployments@2022-12-
   parent: adminApp
   properties: {
     deploymentSettings: {
+	  addonConfigs: {
+		applicationConfigurationService: {
+			configFilePatterns: adminAppName
+		}
+	  }
       resourceRequests: {
         cpu: '1'
         memory: '2Gi'
       }
     }
     source: {
-      type: 'Jar'
-      jvmOptions: '-Xms2048m -Xmx2048m'
-      runtimeVersion: 'Java_17'
-      relativePath: adminRelativePath
+	  type: 'BuildResult'
+      buildResultId: '<default>'
     }
   }
 }
@@ -123,16 +195,19 @@ resource customersDeployment 'Microsoft.AppPlatform/Spring/apps/deployments@2022
   parent: customersApp
   properties: {
     deploymentSettings: {
+	  addonConfigs: {
+		applicationConfigurationService: {
+			configFilePatterns: customersAppName
+		}
+	  }
       resourceRequests: {
         cpu: '1'
         memory: '2Gi'
       }
     }
     source: {
-      type: 'Jar'
-      jvmOptions: '-Xms2048m -Xmx2048m'
-      runtimeVersion: 'Java_17'
-      relativePath: customersRelativePath
+	  type: 'BuildResult'
+      buildResultId: '<default>'
     }
   }
 }
@@ -142,16 +217,19 @@ resource vetsDeployment 'Microsoft.AppPlatform/Spring/apps/deployments@2022-12-0
   parent: vetsApp
   properties: {
     deploymentSettings: {
+	  addonConfigs: {
+		applicationConfigurationService: {
+			configFilePatterns: vetsAppName
+		}
+	  }
       resourceRequests: {
         cpu: '1'
         memory: '2Gi'
       }
     }
     source: {
-      type: 'Jar'
-      jvmOptions: '-Xms2048m -Xmx2048m'
-      runtimeVersion: 'Java_17'
-      relativePath: vetsRelativePath
+	  type: 'BuildResult'
+      buildResultId: '<default>'
     }
   }
 }
@@ -161,16 +239,31 @@ resource visitsDeployment 'Microsoft.AppPlatform/Spring/apps/deployments@2022-12
   parent: visitsApp
   properties: {
     deploymentSettings: {
+	  addonConfigs: {
+		applicationConfigurationService: {
+			configFilePatterns: visitsAppName
+		}
+	  }
       resourceRequests: {
         cpu: '1'
         memory: '2Gi'
       }
     }
     source: {
-      type: 'Jar'
-      jvmOptions: '-Xms2048m -Xmx2048m'
-      runtimeVersion: 'Java_17'
-      relativePath: visitsRelativePath
+	  type: 'BuildResult'
+      buildResultId: '<default>'
     }
   }
+}
+
+resource buildAgentpool 'Microsoft.AppPlatform/Spring/buildServices/agentPools@2022-12-01' = {
+  name: '${asaInstance.name}/default/default'
+  properties: {
+    poolSize: {
+      name: 'S2'
+    }
+  }
+  dependsOn: [
+    asaInstance
+  ]
 }
