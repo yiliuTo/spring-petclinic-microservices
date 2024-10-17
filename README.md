@@ -1,233 +1,235 @@
-# Distributed version of the Spring PetClinic Sample Application built with Spring Cloud 
+# Quickstart: Launch your first Java microservice applications with managed Java components in Azure Container Apps
 
-[![Build Status](https://github.com/spring-petclinic/spring-petclinic-microservices/actions/workflows/maven-build.yml/badge.svg)](https://github.com/spring-petclinic/spring-petclinic-microservices/actions/workflows/maven-build.yml)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+This guide demonstrates how to deploy the Spring PetClinic Microservices sample on Azure Container Apps. It uses the built-in Java components provided by Azure Container Apps to support your microservice applications, eliminating the need for manual deployment. Instead of manually creating a Dockerfile and using a container registry, you can deploy your Java applications directly from Java Archive (JAR) or Web Application Archive (WAR) files.
 
-This microservices branch was initially derived from [AngularJS version](https://github.com/spring-petclinic/spring-petclinic-angular1) to demonstrate how to split sample Spring application into [microservices](http://www.martinfowler.com/articles/microservices.html).
-To achieve that goal, we use Spring Cloud Gateway, Spring Cloud Circuit Breaker, Spring Cloud Config, Micrometer Tracing, Resilience4j, Open Telemetry 
-and the Eureka Service Discovery from the [Spring Cloud Netflix](https://github.com/spring-cloud/spring-cloud-netflix) technology stack.
+The PetClinic sample illustrates the microservice architecture pattern. The following diagram depicts the architecture of the PetClinic application on Azure Container Apps.
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/spring-petclinic/spring-petclinic-microservices)
+The diagram illustrates the architectural flows and relationships of the PetClinic sample:
 
-## Starting services locally without Docker
+- Builds the frontend app as a standalone web application on the API Gateway App with Node.js, exposing the URL of the API Gateway to route requests to backend service apps.
+- Builds the backend apps with Spring Boot, each utilizing HSQLDB as the persistent store.
+- Uses managed Java components on Azure Container Apps, including Service Registry, Config Server, and Admin Server.
+- Reads configurations of the config server from a Git repository.
+- Exposes the URL of the Admin Server to monitor backend apps.
+- Exposes the URL of the Service Registry to discover backend apps.
+- Analyzes logs using the Log Analytics workspace.
 
-Every microservice is a Spring Boot application and can be started locally using IDE ([Lombok](https://projectlombok.org/) plugin has to be set up) or `../mvnw spring-boot:run` command. Please note that supporting services (Config and Discovery Server) must be started before any other application (Customers, Vets, Visits and API).
-Startup of Tracing server, Admin server, Grafana and Prometheus is optional.
-If everything goes well, you can access the following services at given location:
-* Discovery Server - http://localhost:8761
-* Config Server - http://localhost:8888
-* AngularJS frontend (API Gateway) - http://localhost:8080
-* Customers, Vets and Visits Services - random port, check Eureka Dashboard 
-* Tracing Server (Zipkin) - http://localhost:9411/zipkin/ (we use [openzipkin](https://github.com/openzipkin/zipkin/tree/main/zipkin-server))
-* Admin Server (Spring Boot Admin) - http://localhost:9090
-* Grafana Dashboards - http://localhost:3000
-* Prometheus - http://localhost:9091
+![Architecture of pet clinic app](resources/azure-container-apps-petclinic-arch.png)
 
-You can tell Config Server to use your local Git repository by using `native` Spring profile and setting
-`GIT_REPO` environment variable, for example:
-`-Dspring.profiles.active=native -DGIT_REPO=/projects/spring-petclinic-microservices-config`
+By the end of this tutorial, you deploy one web application and three backend applications, and configure three Java components. These components can be managed through the Azure portal.
 
-## Starting services locally with docker-compose
-In order to start entire infrastructure using Docker, you have to build images by executing
-``bash
-./mvnw clean install -P buildDocker
-``
-This requires `Docker` or `Docker desktop` to be installed and running.
+## Prerequisites
 
-Alternatively you can also build all the images on `Podman`, which requires Podman or Podman Desktop to be installed and running.
+| Requirement  | Instructions |
+|--|--|
+| Azure account | If you don't have one, [create an account for free](https://azure.microsoft.com/free/?WT.mc_id=A261C142F).<br><br>You need the *Contributor* or *Owner* permission on the Azure subscription to proceed. <br><br>Refer to [Assign Azure roles using the Azure portal](../role-based-access-control/role-assignments-portal.yml?tabs=current) for details. |
+| GitHub Account | Get one for [free](https://github.com/join). |
+| git | [Install git](https://git-scm.com/downloads) |
+| Azure CLI | Install the [Azure CLI](/cli/azure/install-azure-cli).|
+| Container Apps CLI extension | Use version `0.3.47` or higher. Use the `az extension add --name containerapp --upgrade --allow-preview` command to install the latest version. |
+| Java | Install the [Java Development Kit](/java/openjdk/install). Use version 17 or later. |
+| Apache Maven | Download and install [Apache Maven](https://maven.apache.org/download.cgi).|
+
+## Prepare the project
+
+Clone the Spring PetClinic Microservices sample to your machine and change into the *spring-petclinic-microservices* folder.
+
 ```bash
-./mvnw clean install -PbuildDocker -Dcontainer.executable=podman
+git clone https://github.com/Azure-Samples/azure-container-apps-java-samples.git && cd azure-container-apps-java-samples/spring-petclinic-microservices
 ```
-By default, the Docker OCI image is build for an `linux/amd64` platform.
-For other architectures, you could change it by using the `-Dcontainer.platform` maven command line argument.
-For instance, if you target container images for an Apple M2, you could use the command line with the `linux/arm64` architecture:
+
+Create a bash script with environment variables by making a copy of the supplied template:
+
 ```bash
-./mvnw clean install -P buildDocker -Dcontainer.platform="linux/arm64"
+cp .scripts/setup-env-variables-azure-template.sh .scripts/setup-env-variables-azure.sh
 ```
 
-Once images are ready, you can start them with a single command
-`docker-compose up` or `podman-compose up`. 
+Open `.scripts/setup-env-variables-azure.sh` and customize the following three variables as you need:
 
-Containers startup order is coordinated with the `service_healthy` condition of the Docker Compose [depends-on](https://github.com/compose-spec/compose-spec/blob/main/spec.md#depends_on) expression 
-and the [healthcheck](https://github.com/compose-spec/compose-spec/blob/main/spec.md#healthcheck) of the service containers. 
-After starting services, it takes a while for API Gateway to be in sync with service registry,
-so don't be scared of initial Spring Cloud Gateway timeouts. You can track services availability using Eureka dashboard
-available by default at http://localhost:8761.
-
-The `main` branch uses an Eclipse Temurin with Java 17 as Docker base image.
-
-*NOTE: Under MacOSX or Windows, make sure that the Docker VM has enough memory to run the microservices. The default settings
-are usually not enough and make the `docker-compose up` painfully slow.*
-
-
-## Starting services locally with docker-compose and Java
-If you experience issues with running the system via docker-compose you can try running the `./scripts/run_all.sh` script that will start the infrastructure services via docker-compose and all the Java based applications via standard `nohup java -jar ...` command. The logs will be available under `${ROOT}/target/nameoftheapp.log`. 
-
-Each of the java based applications is started with the `chaos-monkey` profile in order to interact with Spring Boot Chaos Monkey. You can check out the (README)[scripts/chaos/README.md] for more information about how to use the `./scripts/chaos/call_chaos.sh` helper script to enable assaults.
-
-## Understanding the Spring Petclinic application
-
-[See the presentation of the Spring Petclinic Framework version](http://fr.slideshare.net/AntoineRey/spring-framework-petclinic-sample-application)
-
-[A blog post introducing the Spring Petclinic Microsevices](http://javaetmoi.com/2018/10/architecture-microservices-avec-spring-cloud/) (french language)
-
-You can then access petclinic here: http://localhost:8080/
-
-![Spring Petclinic Microservices screenshot](docs/application-screenshot.png)
-
-
-**Architecture diagram of the Spring Petclinic Microservices**
-
-![Spring Petclinic Microservices architecture](docs/microservices-architecture-diagram.jpg)
-
-
-## In case you find a bug/suggested improvement for Spring Petclinic Microservices
-
-Our issue tracker is available here: https://github.com/spring-petclinic/spring-petclinic-microservices/issues
-
-## Database configuration
-
-In its default configuration, Petclinic uses an in-memory database (HSQLDB) which gets populated at startup with data.
-A similar setup is provided for MySql in case a persistent database configuration is needed.
-Dependency for Connector/J, the MySQL JDBC driver is already included in the `pom.xml` files.
-
-### Start a MySql database
-
-You may start a MySql database with docker:
-
-```
-docker run -e MYSQL_ROOT_PASSWORD=petclinic -e MYSQL_DATABASE=petclinic -p 3306:3306 mysql:5.7.8
-```
-or download and install the MySQL database (e.g., MySQL Community Server 5.7 GA), which can be found here: https://dev.mysql.com/downloads/
-
-### Use the Spring 'mysql' profile
-
-To use a MySQL database, you have to start 3 microservices (`visits-service`, `customers-service` and `vets-services`)
-with the `mysql` Spring profile. Add the `--spring.profiles.active=mysql` as programm argument.
-
-By default, at startup, database schema will be created and data will be populated.
-You may also manually create the PetClinic database and data by executing the `"db/mysql/{schema,data}.sql"` scripts of each 3 microservices. 
-In the `application.yml` of the [Configuration repository], set the `initialization-mode` to `never`.
-
-If you are running the microservices with Docker, you have to add the `mysql` profile into the (Dockerfile)[docker/Dockerfile]:
-```
-ENV SPRING_PROFILES_ACTIVE docker,mysql
-```
-In the `mysql section` of the `application.yml` from the [Configuration repository], you have to change 
-the host and port of your MySQL JDBC connection string. 
-
-## Custom metrics monitoring
-
-Grafana and Prometheus are included in the `docker-compose.yml` configuration, and the public facing applications
-have been instrumented with [MicroMeter](https://micrometer.io) to collect JVM and custom business metrics.
-
-A JMeter load testing script is available to stress the application and generate metrics: [petclinic_test_plan.jmx](spring-petclinic-api-gateway/src/test/jmeter/petclinic_test_plan.jmx)
-
-![Grafana metrics dashboard](docs/grafana-custom-metrics-dashboard.png)
-
-### Using Prometheus
-
-* Prometheus can be accessed from your local machine at http://localhost:9091
-
-### Using Grafana with Prometheus
-
-* An anonymous access and a Prometheus datasource are setup.
-* A `Spring Petclinic Metrics` Dashboard is available at the URL http://localhost:3000/d/69JXeR0iw/spring-petclinic-metrics.
-You will find the JSON configuration file here: [docker/grafana/dashboards/grafana-petclinic-dashboard.json]().
-* You may create your own dashboard or import the [Micrometer/SpringBoot dashboard](https://grafana.com/dashboards/4701) via the Import Dashboard menu item.
-The id for this dashboard is `4701`.
-
-### Custom metrics
-Spring Boot registers a lot number of core metrics: JVM, CPU, Tomcat, Logback... 
-The Spring Boot auto-configuration enables the instrumentation of requests handled by Spring MVC.
-All those three REST controllers `OwnerResource`, `PetResource` and `VisitResource` have been instrumented by the `@Timed` Micrometer annotation at class level.
-
-* `customers-service` application has the following custom metrics enabled:
-  * @Timed: `petclinic.owner`
-  * @Timed: `petclinic.pet`
-* `visits-service` application has the following custom metrics enabled:
-  * @Timed: `petclinic.visit`
-
-## Looking for something in particular?
-
-| Spring Cloud components         | Resources  |
-|---------------------------------|------------|
-| Configuration server            | [Config server properties](spring-petclinic-config-server/src/main/resources/application.yml) and [Configuration repository] |
-| Service Discovery               | [Eureka server](spring-petclinic-discovery-server) and [Service discovery client](spring-petclinic-vets-service/src/main/java/org/springframework/samples/petclinic/vets/VetsServiceApplication.java) |
-| API Gateway                     | [Spring Cloud Gateway starter](spring-petclinic-api-gateway/pom.xml) and [Routing configuration](/spring-petclinic-api-gateway/src/main/resources/application.yml) |
-| Docker Compose                  | [Spring Boot with Docker guide](https://spring.io/guides/gs/spring-boot-docker/) and [docker-compose file](docker-compose.yml) |
-| Circuit Breaker                 | [Resilience4j fallback method](spring-petclinic-api-gateway/src/main/java/org/springframework/samples/petclinic/api/boundary/web/ApiGatewayController.java)  |
-| Grafana / Prometheus Monitoring | [Micrometer implementation](https://micrometer.io/), [Spring Boot Actuator Production Ready Metrics] |
-
-|  Front-end module | Files |
-|-------------------|-------|
-| Node and NPM      | [The frontend-maven-plugin plugin downloads/installs Node and NPM locally then runs Bower and Gulp](spring-petclinic-ui/pom.xml)  |
-| Bower             | [JavaScript libraries are defined by the manifest file bower.json](spring-petclinic-ui/bower.json)  |
-| Gulp              | [Tasks automated by Gulp: minify CSS and JS, generate CSS from LESS, copy other static resources](spring-petclinic-ui/gulpfile.js)  |
-| Angular JS        | [app.js, controllers and templates](spring-petclinic-ui/src/scripts/)  |
-
-## Pushing to a Docker registry
-
-Docker images for `linux/amd64` and `linux/arm64` platforms have been published into DockerHub 
-in the [springcommunity](https://hub.docker.com/u/springcommunity) organization.
-You can pull an image:
 ```bash
-docker pull springcommunity/spring-petclinic-config-server
+# ==== Resource Group ====
+export RESOURCE_GROUP=rg-petclinic # customize this
+export LOCATION=eastus # customize this
+
+# ==== Environment and App Instances ====
+export CONTAINER_APP_ENVIRONMENT=petclinic-env # customize this
+...
 ```
-You may prefer to build then push images to your own Docker registry.
 
-### Choose your Docker registry
+Then, set the environment variables:
 
-You need to define your target Docker registry.
-Make sure you're already logged in by running `docker login <endpoint>` or `docker login` if you're just targeting Docker hub.
-
-Setup the `REPOSITORY_PREFIX` env variable to target your Docker registry.
-If you're targeting Docker hub, simple provide your username, for example:
 ```bash
-export REPOSITORY_PREFIX=springcommunity
+source .scripts/setup-env-variables-azure.sh
 ```
 
-For other Docker registries, provide the full URL to your repository, for example:
+## Prepare the Container App Environment
+
+Log in to the Azure CLI and choose your active subscription.
+
+```azurecli
+az login
+```
+
+Create a resource group to contain your Azure Container App services.
+
+```azurecli
+az group create --name $RESOURCE_GROUP --location $LOCATION
+```
+
+Create your Container Apps Environment, this environment is used to host both Java components and your Container Apps.
+
+```azurecli
+az containerapp env create --name $CONTAINER_APP_ENVIRONMENT --resource-group $RESOURCE_GROUP --location $LOCATION
+```
+
+
+## Create the Java components
+
+Create the Config Server for Java component.
+
+```azurecli
+az containerapp env java-component config-server-for-spring create \
+  --environment $CONTAINER_APP_ENVIRONMENT \
+  --resource-group $RESOURCE_GROUP \
+  --name $CONFIG_SERVER_COMPONENT \
+  --configuration spring.cloud.config.server.git.uri=$CONFIG_SERVER_URI \
+  spring.cloud.config.server.git.search-paths=$CONFIG_SERVER_SEARCH_PATHS \
+  spring.cloud.config.server.git.default-label=$CONFIG_SERVER_LABEL
+```
+
+Create the Eureka Server for Java component.
+
+```azurecli
+az containerapp env java-component eureka-server-for-spring create \
+  --environment $CONTAINER_APP_ENVIRONMENT \
+  --resource-group $RESOURCE_GROUP \
+  --name $EUREKA_SERVER_COMPONENT
+```
+
+Create the Admin Server for Java component.
+
+```azurecli
+az containerapp env java-component admin-for-spring create \
+  --environment $CONTAINER_APP_ENVIRONMENT \
+  --resource-group $RESOURCE_GROUP \
+  --name $ADMIN_SERVER_COMPONENT \
+  --bind $EUREKA_SERVER_COMPONENT
+```
+
+## Build and deploy the project to Azure Container Apps
+
+Clean the Maven build area, compile the project's code, and create JAR files, all while skipping any tests.
+
 ```bash
-export REPOSITORY_PREFIX=harbor.myregistry.com/petclinic
+mvn clean package -DskipTests
 ```
 
-To push Docker image for the `linux/amd64` and the `linux/arm64` platform to your own registry, please use the command line:
-```bash
-mvn clean install -Dmaven.test.skip -P buildDocker -Ddocker.image.prefix=${REPOSITORY_PREFIX} -Dcontainer.build.extraarg="--push" -Dcontainer.platform="linux/amd64,linux/arm64"
+Deploy the JAR packages to Azure Container Apps.
+
+> [!NOTE]
+> If necessary, you can specify the JDK version in the [Java build environment variables](java-build-environment-variables.md).
+
+Now you can deploy your JAR files with the `az containerapp up` CLI command.
+
+```azurecli
+az containerapp up \
+  --name $CUSTOMERS_SERVICE \
+  --resource-group $RESOURCE_GROUP \
+  --location $LOCATION \
+  --environment $CONTAINER_APP_ENVIRONMENT \
+  --artifact $CUSTOMERS_SERVICE_JAR
+
+az containerapp up \
+  --name $VETS_SERVICE \
+  --resource-group $RESOURCE_GROUP \
+  --location $LOCATION \
+  --environment $CONTAINER_APP_ENVIRONMENT \
+  --artifact $VETS_SERVICE_JAR
+
+az containerapp up \
+  --name $VISITS_SERVICE \
+  --resource-group $RESOURCE_GROUP \
+  --location $LOCATION \
+  --environment $CONTAINER_APP_ENVIRONMENT \
+  --artifact $VISITS_SERVICE_JAR
+
+az containerapp up \
+  --name $API_GATEWAY \
+  --resource-group $RESOURCE_GROUP \
+  --location $LOCATION \
+  --environment $CONTAINER_APP_ENVIRONMENT \
+  --artifact $API_GATEWAY_JAR \
+  --ingress external \
+  --target-port 8080 \
+  --query properties.configuration.ingress.fqdn 
 ```
 
-The `scripts/pushImages.sh` and `scripts/tagImages.sh` shell scripts could also be used once you build your image with the `buildDocker` maven profile.
-The `scripts/tagImages.sh` requires to declare the `VERSION` env variable.
+> [!NOTE]
+> The default JDK version is 17. If you need to change the JDK version for compatibility with your application, you can use the `--build-env-vars BP_JVM_VERSION=<YOUR_JDK_VERSION>` argument to adjust the version number.
+>
+> You can find more applicable build environment variables in [Java build environment variables](java-build-environment-variables.md).
 
-## Compiling the CSS
+Bind the Java components to the container apps
 
-There is a `petclinic.css` in `spring-petclinic-api-gateway/src/main/resources/static/css`.
-It was generated from the `petclinic.scss` source, combined with the [Bootstrap](https://getbootstrap.com/) library.
-If you make changes to the `scss`, or upgrade Bootstrap, you will need to re-compile the CSS resources
-using the Maven profile `css` of the `spring-petclinic-api-gateway`module.
-```bash
-cd spring-petclinic-api-gateway
-mvn generate-resources -P css
+```azurecli
+az containerapp update \
+  --name $CUSTOMERS_SERVICE \
+  --resource-group $RESOURCE_GROUP \
+  --bind $CONFIG_SERVER_COMPONENT $EUREKA_SERVER_COMPONENT
+
+az containerapp update \
+  --name $VETS_SERVICE \
+  --resource-group $RESOURCE_GROUP \
+  --bind $CONFIG_SERVER_COMPONENT $EUREKA_SERVER_COMPONENT
+
+az containerapp update \
+  --name $VISITS_SERVICE \
+  --resource-group $RESOURCE_GROUP \
+  --bind $CONFIG_SERVER_COMPONENT $EUREKA_SERVER_COMPONENT
+
+az containerapp update \
+  --name $API_GATEWAY \
+  --resource-group $RESOURCE_GROUP \
+  --bind $CONFIG_SERVER_COMPONENT $EUREKA_SERVER_COMPONENT \
+  --query properties.configuration.ingress.fqdn 
 ```
 
-## Interesting Spring Petclinic forks
+## Verify app status
 
-The Spring Petclinic `main` branch in the main [spring-projects](https://github.com/spring-projects/spring-petclinic)
-GitHub org is the "canonical" implementation, currently based on Spring Boot and Thymeleaf.
+In this example, `containerapp up` command includes the `--query properties.configuration.ingress.fqdn` argument, which returns the fully qualified domain name (FQDN), also known as the app's URL.
 
-This [spring-petclinic-microservices](https://github.com/spring-petclinic/spring-petclinic-microservices/) project is one of the [several forks](https://spring-petclinic.github.io/docs/forks.html) 
-hosted in a special GitHub org: [spring-petclinic](https://github.com/spring-petclinic).
-If you have a special interest in a different technology stack
-that could be used to implement the Pet Clinic then please join the community there.
+View the application by pasting this URL into a browser. Your app should resemble the following screenshot.
 
+:::image type="content" source="media/java-deploy-war-file/azure-container-apps-petclinic-warfile.png" alt-text="Screenshot of pet clinic application.":::
 
-## Contributing
+You can also get the URL of the Eureka Server and Admin for Spring dashboard and view your apps' status.
 
-The [issue tracker](https://github.com/spring-petclinic/spring-petclinic-microservices/issues) is the preferred channel for bug reports, features requests and submitting pull requests.
+```azurecli
+az containerapp env java-component eureka-server-for-spring show \
+  --environment $CONTAINER_APP_ENVIRONMENT \
+  --resource-group $RESOURCE_GROUP \
+  --name $EUREKA_SERVER_COMPONENT \
+  --query properties.ingress.fqdn
 
-For pull requests, editor preferences are available in the [editor config](.editorconfig) for easy use in common text editors. Read more and download plugins at <http://editorconfig.org>.
+az containerapp env java-component admin-for-spring show \
+  --environment $CONTAINER_APP_ENVIRONMENT \
+  --resource-group $RESOURCE_GROUP \
+  --name $ADMIN_SERVER_COMPONENT \
+  --query properties.ingress.fqdn
+```
 
+The dashboard of your Eureka and Admin servers should resemble the following screenshots.
 
-[Configuration repository]: https://github.com/spring-petclinic/spring-petclinic-microservices-config
-[Spring Boot Actuator Production Ready Metrics]: https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-metrics.html
+:::image type="content" source="media/java-deploy-war-file/azure-container-apps-petclinic-eureka.png" alt-text="Screenshot of pet clinic application Eureka Server.":::
+
+:::image type="content" source="media/java-deploy-war-file/azure-container-apps-petclinic-admin.png" alt-text="Screenshot of pet clinic application Admin.":::
+
+## Clean up resources
+
+The resources created in this tutorial have an effect on your Azure bill. If you aren't going to use these services long-term, run the following command to remove everything created in this tutorial.
+
+```azurecli
+az group delete \
+  --resource-group $RESOURCE_GROUP
+```
+
